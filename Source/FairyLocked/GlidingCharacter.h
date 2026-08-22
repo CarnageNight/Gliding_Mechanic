@@ -15,14 +15,15 @@ public:
 	// Sets default values for this character's properties
 	AGlidingCharacter();
 	
-	UPROPERTY(EditAnywhere, Category = "Flight")
-	float Acceleration{30.f};
 	
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float MaxSpeed{4000.f};
 	
 	UPROPERTY(EditAnywhere, Category = "Flight")
-	float MinSpeed{500.f};
+	float MaxReverseSpeed{-800.f};
+	
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float MinSpeed{0.f};
 	
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float RollRateMultiplier{200.f};
@@ -33,6 +34,18 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Flight")
 	float CurrentForwardSpeed{500.f};
 	
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float DiveAcceleration{30.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float ClimbDeceleration{10.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float DivePitchThreshold{5.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float ClimbPitchThreshold{5.f};
+	
 	
 	float CurrentYawSpeed;
 	float CurrentPitchSpeed;
@@ -40,8 +53,21 @@ public:
 	
 	bool bIntentionalPitch{false};
 	bool bIntentionalRoll{false};
+	
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float ThrustAcceleration{2000.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float Drag{15.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float VerticalThrustSpeed{600.f};
 
 protected:
+	
+	void ProcessVerticalThrust(float Value);
+
+	float CurrentVerticalInput{0.f};
 	void ProcessKeyPitch(float Rate);
 	void ProcessKeyRoll(float Rate);
 	
@@ -51,6 +77,10 @@ protected:
 	//to calculate rotation
 	void ProcessRoll(float Value);
 	void ProcessPitch(float Value);
+	
+	void ProcessThrust(float Value);
+
+	float CurrentThrustInput{0.f};
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

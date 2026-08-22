@@ -11,6 +11,11 @@ AGlidingCharacter::AGlidingCharacter()
 
 }
 
+void AGlidingCharacter::ProcessVerticalThrust(float Value)
+{
+	CurrentVerticalInput = Value;
+}
+
 void AGlidingCharacter::ProcessKeyPitch(float Rate)
 {
 	if (FMath::Abs(Rate) > .2f)
@@ -53,6 +58,11 @@ void AGlidingCharacter::ProcessPitch(float Value)
 	CurrentPitchSpeed =  FMath::FInterpTo(CurrentPitchSpeed, TargetPitchSpeed, GetWorld()->GetDeltaSeconds(), 2.f);
 }
 
+void AGlidingCharacter::ProcessThrust(float Value)
+{
+	CurrentThrustInput = Value;
+}
+
 // Called when the game starts or when spawned
 void AGlidingCharacter::BeginPlay()
 {
@@ -66,14 +76,39 @@ void AGlidingCharacter::Tick(float DeltaTime)
 	
 	//TO DO:: make so only apply thrust when holdding W
 			
-	//Calculate Thrust
-	const float CurrentAcc = -GetActorRotation().Pitch * DeltaTime * Acceleration;
-	const float NewForwardSpeed = CurrentForwardSpeed + CurrentAcc;
-	CurrentForwardSpeed = FMath::Clamp(NewForwardSpeed, MinSpeed, MaxSpeed);
+	// Calculate Thrust
+	const float Pitch = GetActorRotation().Pitch;
+
+	float GravityAcc = 0.f;
+	if (Pitch < -DivePitchThreshold)
+	{
+		// Past the dive threshold — scale from where the threshold ends, not from zero
+		GravityAcc = (-Pitch - DivePitchThreshold) * DeltaTime * DiveAcceleration;
+	}
+	else if (Pitch > ClimbPitchThreshold)
+	{
+		GravityAcc = -(Pitch - ClimbPitchThreshold) * DeltaTime * ClimbDeceleration;
+	}
+	const float ThrustAcc = CurrentThrustInput * ThrustAcceleration * DeltaTime;
+
+	// Passive drag pulls speed back toward MinSpeed when not actively thrusting.
+	// If diving, GravityAcc will typically outpace this and speed still climbs.
+	const bool bThrusting = FMath::Abs(CurrentThrustInput) > KINDA_SMALL_NUMBER;
+	const float DragTarget = (CurrentForwardSpeed < 0.f) ? 0.f : MinSpeed;
+	const float DragAcc = bThrusting ? 0.f : (MinSpeed - CurrentForwardSpeed) * Drag * DeltaTime;
+
+	const float NewForwardSpeed = CurrentForwardSpeed + GravityAcc + ThrustAcc + DragAcc;
+	
+	const bool bReversing = CurrentThrustInput < -KINDA_SMALL_NUMBER;
+	const float MinBound = bReversing ? MaxReverseSpeed : MinSpeed;
+
+	CurrentForwardSpeed = FMath::Clamp(NewForwardSpeed, MinBound, MaxSpeed);
 	
 	const FVector LocalMove = FVector(CurrentForwardSpeed * DeltaTime, 0.f, 0.f);
-	
 	AddActorLocalOffset(LocalMove, true);
+
+	const FVector VerticalMove = FVector(0.f, 0.f, CurrentVerticalInput * VerticalThrustSpeed * DeltaTime);
+	AddActorWorldOffset(VerticalMove, true);
 	
 	
 	
@@ -114,6 +149,8 @@ void AGlidingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("TurnRate", this, &AGlidingCharacter::ProcessKeyRoll);
 	PlayerInputComponent->BindAxis("LookUp", this, &AGlidingCharacter::ProcessMouseYInput);
 	PlayerInputComponent->BindAxis("LookUprate", this, &AGlidingCharacter::ProcessKeyPitch);
+	PlayerInputComponent->BindAxis("MoveForward", this, &AGlidingCharacter::ProcessThrust);
+	PlayerInputComponent->BindAxis("MoveUp", this, &AGlidingCharacter::ProcessVerticalThrust);
 
 
 }
