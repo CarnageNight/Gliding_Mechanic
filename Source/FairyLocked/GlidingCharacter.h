@@ -46,6 +46,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float ClimbPitchThreshold{5.f};
 	
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float TurnRateFromRoll{2.0f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float MaxRollAngle{25.f};
+	
 	
 	float CurrentYawSpeed;
 	float CurrentPitchSpeed;

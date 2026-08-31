@@ -46,16 +46,18 @@ void AGlidingCharacter::ProcessRoll(float Value)
 	
 	const float TargetRollSpeed = bIntentionalRoll ? (Value * RollRateMultiplier) : (GetActorRotation().Roll * -2.f);
 	
-	CurrentRollSpeed =  FMath::FInterpTo(CurrentRollSpeed, TargetRollSpeed, GetWorld()->GetDeltaSeconds(), 2.f);
+	CurrentRollSpeed =  FMath::FInterpTo(CurrentRollSpeed, TargetRollSpeed, GetWorld()->GetDeltaSeconds(), 8.f);
 }
 
 void AGlidingCharacter::ProcessPitch(float Value)
 {
 	bIntentionalPitch = FMath::Abs(Value) > 0.f;
-	
-	const float TargetPitchSpeed = Value * PitchRateMultiplier;
-	
-	CurrentPitchSpeed =  FMath::FInterpTo(CurrentPitchSpeed, TargetPitchSpeed, GetWorld()->GetDeltaSeconds(), 2.f);
+    
+	if (bIntentionalRoll && !bIntentionalPitch) return;
+    
+	const float TargetPitchSpeed = bIntentionalPitch ? (Value * PitchRateMultiplier) : (GetActorRotation().Pitch * -2.f);
+    
+	CurrentPitchSpeed = FMath::FInterpTo(CurrentPitchSpeed, TargetPitchSpeed, GetWorld()->GetDeltaSeconds(), 8.f);
 }
 
 void AGlidingCharacter::ProcessThrust(float Value)
@@ -74,8 +76,6 @@ void AGlidingCharacter::BeginPlay()
 void AGlidingCharacter::Tick(float DeltaTime)
 {
 	
-	//TO DO:: make so only apply thrust when holdding W
-			
 	// Calculate Thrust
 	const float Pitch = GetActorRotation().Pitch;
 
@@ -92,9 +92,7 @@ void AGlidingCharacter::Tick(float DeltaTime)
 	const float ThrustAcc = CurrentThrustInput * ThrustAcceleration * DeltaTime;
 
 	// Passive drag pulls speed back toward MinSpeed when not actively thrusting.
-	// If diving, GravityAcc will typically outpace this and speed still climbs.
 	const bool bThrusting = FMath::Abs(CurrentThrustInput) > KINDA_SMALL_NUMBER;
-	const float DragTarget = (CurrentForwardSpeed < 0.f) ? 0.f : MinSpeed;
 	const float DragAcc = bThrusting ? 0.f : (MinSpeed - CurrentForwardSpeed) * Drag * DeltaTime;
 
 	const float NewForwardSpeed = CurrentForwardSpeed + GravityAcc + ThrustAcc + DragAcc;
@@ -112,12 +110,20 @@ void AGlidingCharacter::Tick(float DeltaTime)
 	
 	
 	
-	FRotator DeltaRotation(0, 0, 0);
-	DeltaRotation.Roll = CurrentRollSpeed * DeltaTime;
-	DeltaRotation.Yaw = CurrentYawSpeed * DeltaTime;
-	DeltaRotation.Pitch = CurrentPitchSpeed * DeltaTime;
+	const float CurrentRoll = GetActorRotation().Roll;
+	CurrentYawSpeed = CurrentRoll * TurnRateFromRoll;
 	
-	AddActorLocalRotation(DeltaRotation);
+	float RollDelta = CurrentRollSpeed * DeltaTime;
+	
+
+	const float ProjectedRoll = FMath::ClampAngle(CurrentRoll + RollDelta, -MaxRollAngle, MaxRollAngle);
+	RollDelta = ProjectedRoll - CurrentRoll;
+
+	AddActorLocalRotation(FRotator(0.f, 0.f, RollDelta));
+	AddActorLocalRotation(FRotator(CurrentPitchSpeed * DeltaTime, 0.f, 0.f));
+	AddActorLocalRotation(FRotator(0.f, CurrentYawSpeed * DeltaTime, 0.f));
+
+
 	
 	GEngine -> AddOnScreenDebugMessage(0, 0.f, FColor::Green, FString::Printf(TEXT("CurrentForwardSpeed: %f"), CurrentForwardSpeed));
 	
