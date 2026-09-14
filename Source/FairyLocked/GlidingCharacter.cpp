@@ -3,12 +3,37 @@
 
 #include "GlidingCharacter.h"
 
+#include "GameFramework/CharacterMovementComponent.h"
+
 // Sets default values
 AGlidingCharacter::AGlidingCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = false;
+		MoveComp->GravityScale = 0.f;
+		MoveComp->SetMovementMode(MOVE_Flying);
+	}
+
+}
+
+void AGlidingCharacter::ProcessYawInput(float Value)
+{
+	CurrentYawInput = Value;
+	CurrentYawSpeed = Value * YawRateMultiplier;
+}
+
+void AGlidingCharacter::ProcessKeyYaw(float Rate)
+{
+	if (FMath::Abs(Rate) > .2f)
+		ProcessYawInput(Rate * 2.f);
 }
 
 void AGlidingCharacter::ProcessVerticalThrust(float Value)
@@ -22,38 +47,17 @@ void AGlidingCharacter::ProcessKeyPitch(float Rate)
 		ProcessPitch(Rate * 2.f);
 }
 
-void AGlidingCharacter::ProcessKeyRoll(float Rate)
-{
-	if (FMath::Abs(Rate) > .2f)
-		ProcessRoll(Rate * 2.f);
-}
 
 void AGlidingCharacter::ProcessMouseYInput(float Value)
 {
 	ProcessPitch(Value);
 }
 
-void AGlidingCharacter::ProcessMouseXInput(float Value)
-{
-	ProcessRoll(Value);
-}
-
-void AGlidingCharacter::ProcessRoll(float Value)
-{
-	bIntentionalRoll = FMath::Abs(Value) > 0.f;
-	
-	if (bIntentionalPitch && !bIntentionalRoll) return;
-	
-	const float TargetRollSpeed = bIntentionalRoll ? (Value * RollRateMultiplier) : (GetActorRotation().Roll * -2.f);
-	
-	CurrentRollSpeed =  FMath::FInterpTo(CurrentRollSpeed, TargetRollSpeed, GetWorld()->GetDeltaSeconds(), 8.f);
-}
 
 void AGlidingCharacter::ProcessPitch(float Value)
 {
 	bIntentionalPitch = FMath::Abs(Value) > 0.f;
-    
-	if (bIntentionalRoll && !bIntentionalPitch) return;
+	
     
 	const float TargetPitchSpeed = bIntentionalPitch ? (Value * PitchRateMultiplier) : (GetActorRotation().Pitch * -2.f);
     
@@ -109,23 +113,33 @@ void AGlidingCharacter::Tick(float DeltaTime)
 	AddActorWorldOffset(VerticalMove, true);
 	
 	
-	
-	const float CurrentRoll = GetActorRotation().Roll;
-	CurrentYawSpeed = CurrentRoll * TurnRateFromRoll;
-	
-	float RollDelta = CurrentRollSpeed * DeltaTime;
-	
-
-	const float ProjectedRoll = FMath::ClampAngle(CurrentRoll + RollDelta, -MaxRollAngle, MaxRollAngle);
-	RollDelta = ProjectedRoll - CurrentRoll;
-
-	AddActorLocalRotation(FRotator(0.f, 0.f, RollDelta));
 	AddActorLocalRotation(FRotator(CurrentPitchSpeed * DeltaTime, 0.f, 0.f));
 	AddActorLocalRotation(FRotator(0.f, CurrentYawSpeed * DeltaTime, 0.f));
+
+	FRotator CurrentRot = GetActorRotation();
+
+	const bool bTurning = FMath::Abs(CurrentYawInput) > KINDA_SMALL_NUMBER;
+
+	if (bTurning)
+	{
+		// Let roll drift naturally from the turn, just don't let it exceed the limit
+		CurrentRot.Roll = FMath::ClampAngle(CurrentRot.Roll, -MaxRollAngle, MaxRollAngle);
+	}
+	else
+	{
+		// No turn input — smoothly settle back to level
+		CurrentRot.Roll = FMath::FInterpTo(CurrentRot.Roll, 0.f, DeltaTime, RollRecoverySpeed);
+	}
+
+	SetActorRotation(CurrentRot);
+	
+	
 
 
 	
 	GEngine -> AddOnScreenDebugMessage(0, 0.f, FColor::Green, FString::Printf(TEXT("CurrentForwardSpeed: %f"), CurrentForwardSpeed));
+	
+	GEngine -> AddOnScreenDebugMessage(1, 0.f, FColor::Green, FString::Printf(TEXT("CurrenRotation: %f"), GetActorRotation().Roll));
 	
 	Super::Tick(DeltaTime);
 
@@ -151,8 +165,8 @@ void AGlidingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
-	PlayerInputComponent->BindAxis("Turn", this, &AGlidingCharacter::ProcessMouseXInput);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AGlidingCharacter::ProcessKeyRoll);
+	PlayerInputComponent->BindAxis("Turn", this, &AGlidingCharacter::ProcessYawInput);
+	PlayerInputComponent->BindAxis("TurnRate", this, &AGlidingCharacter::ProcessKeyYaw);
 	PlayerInputComponent->BindAxis("LookUp", this, &AGlidingCharacter::ProcessMouseYInput);
 	PlayerInputComponent->BindAxis("LookUprate", this, &AGlidingCharacter::ProcessKeyPitch);
 	PlayerInputComponent->BindAxis("MoveForward", this, &AGlidingCharacter::ProcessThrust);

@@ -25,8 +25,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float MinSpeed{0.f};
 	
-	UPROPERTY(EditAnywhere, Category = "Flight")
-	float RollRateMultiplier{200.f};
+
 	
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float PitchRateMultiplier{200.f};
@@ -46,19 +45,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float ClimbPitchThreshold{5.f};
 	
-	UPROPERTY(EditAnywhere, Category = "Flight")
-	float TurnRateFromRoll{2.0f};
-
-	UPROPERTY(EditAnywhere, Category = "Flight")
-	float MaxRollAngle{25.f};
 	
 	
 	float CurrentYawSpeed;
 	float CurrentPitchSpeed;
-	float CurrentRollSpeed;
 	
 	bool bIntentionalPitch{false};
-	bool bIntentionalRoll{false};
 	
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float ThrustAcceleration{2000.f};
@@ -68,20 +60,36 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float VerticalThrustSpeed{600.f};
+	
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float YawRateMultiplier{100.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float VisualBankAngle{45.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float BankInterpSpeed{5.f};
+	
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float MaxRollAngle{25.f};
+
+	UPROPERTY(EditAnywhere, Category = "Flight")
+	float RollRecoverySpeed{3.f};
 
 protected:
+	
+	void ProcessYawInput(float Value);
+	void ProcessKeyYaw(float Rate);
+	float CurrentYawInput{0.f};
 	
 	void ProcessVerticalThrust(float Value);
 
 	float CurrentVerticalInput{0.f};
 	void ProcessKeyPitch(float Rate);
-	void ProcessKeyRoll(float Rate);
 	
 	void ProcessMouseYInput(float Rate);
-	void ProcessMouseXInput(float Rate);
 	
 	//to calculate rotation
-	void ProcessRoll(float Value);
 	void ProcessPitch(float Value);
 	
 	void ProcessThrust(float Value);
