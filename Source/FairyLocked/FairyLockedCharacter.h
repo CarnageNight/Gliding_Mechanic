@@ -130,11 +130,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight Tuning")
 	float ForwardThrust = 3000.0f; // Force applied when holding W
 	
-	// NEW: Force applied when holding A or D
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight Tuning")
 	float LateralThrust = 2000.0f; 
-
-	// NEW: Extra drag applied when holding S to slow down
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flight Tuning")
 	float AirBrakeDrag = 0.95f;
 

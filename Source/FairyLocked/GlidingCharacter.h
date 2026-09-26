@@ -76,6 +76,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float RollRecoverySpeed{3.f};
 
+
 protected:
 	
 	void ProcessYawInput(float Value);

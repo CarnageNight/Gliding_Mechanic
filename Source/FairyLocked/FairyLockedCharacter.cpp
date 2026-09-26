@@ -170,8 +170,6 @@ void AFairyLockedCharacter::StartGliding()
        
 		// Turn off normal gravity
 		GetCharacterMovement()->GravityScale = 0.0f; 
-       
-		// NEW: Turn off Unreal's built-in air brakes so our custom thrust works!
 		GetCharacterMovement()->BrakingDecelerationFalling = 0.0f; 
 	}
 }
@@ -183,8 +181,6 @@ void AFairyLockedCharacter::StopGliding()
 	{
 		// Restore normal gravity
 		GetCharacterMovement()->GravityScale = 1.0f; 
-       
-		// NEW: Turn Unreal's air brakes back on for normal jumping
 		GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f; 
 	}
 }
@@ -208,8 +204,7 @@ void AFairyLockedCharacter::Tick(float DeltaTime)
     FVector CameraForwardVector = ControlRot.Vector();
     const FRotator YawRotation(0, ControlRot.Yaw, 0);
     FVector CameraRightVector = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-    // --- 1. STEERING (Fixes the camera direction bug!) ---
+	
     // Smoothly bend our existing momentum towards where the camera is looking
     float CurrentSpeed = CurrentVelocity.Size();
     FVector CurrentDir = CurrentVelocity.GetSafeNormal();
@@ -217,8 +212,7 @@ void AFairyLockedCharacter::Tick(float DeltaTime)
     // 3.0f is the turn speed. Higher number = sharper turns.
     FVector NewDir = FMath::VInterpTo(CurrentDir, CameraForwardVector, DeltaTime, 3.0f).GetSafeNormal();
     CurrentVelocity = NewDir * CurrentSpeed;
-
-    // --- 2. DIVE & LIFT PHYSICS ---
+	
     // ONLY apply natural Glider physics if we are NOT holding W
     if (CurrentForwardInput <= 0.0f)
     {
@@ -241,8 +235,7 @@ void AFairyLockedCharacter::Tick(float DeltaTime)
        // Normal gravity sink rate
        CurrentVelocity.Z -= BaseSinkRate * DeltaTime;
     }
-
-    // --- 3. FORWARD THRUST (W and S) ---
+	
     if (CurrentForwardInput > 0.0f)
     {
        // Flatten the vector so W only pushes horizontally
@@ -252,7 +245,7 @@ void AFairyLockedCharacter::Tick(float DeltaTime)
        
        CurrentVelocity += FlatForwardVector * (CurrentForwardInput * ForwardThrust * DeltaTime);
        
-       // PREVENT UPWARD FLIGHT: Force Z to not exceed 0 while holding W
+     
        if (CurrentVelocity.Z > 0.0f)
        {
            CurrentVelocity.Z = 0.0f;
@@ -260,23 +253,18 @@ void AFairyLockedCharacter::Tick(float DeltaTime)
     }
     else if (CurrentForwardInput < 0.0f)
     {
-       // S: Airbrakes
        CurrentVelocity *= AirBrakeDrag;
     }
-
-    // --- 4. LATERAL MOVEMENT (A and D) ---
+	
     if (CurrentRightInput > 0.1f) 
     {
-       // Pressing D: Full speed Right
        CurrentVelocity += CameraRightVector * (LateralThrust * DeltaTime);
     }
     else if (CurrentRightInput < -0.1f) 
     {
-       // Pressing A: Full speed Left
        CurrentVelocity += CameraRightVector * (-LateralThrust * DeltaTime);
     }
-
-    // --- 5. DRAG ---
+	
     CurrentVelocity *= DragMultiplier; 
 
     // Apply final velocity to character

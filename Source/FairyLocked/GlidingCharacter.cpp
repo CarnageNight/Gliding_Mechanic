@@ -3,6 +3,7 @@
 
 #include "GlidingCharacter.h"
 
+#include "DataWrappers/ChaosVDParticleDataWrapper.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
