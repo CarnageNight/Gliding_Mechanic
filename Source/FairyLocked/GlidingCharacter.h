@@ -30,7 +30,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float PitchRateMultiplier{200.f};
 	
-	UPROPERTY(VisibleAnywhere, Category = "Flight")
+	UPROPERTY(EditAnywhere, Category = "Flight")
 	float CurrentForwardSpeed{500.f};
 	
 	UPROPERTY(EditAnywhere, Category = "Flight")
@@ -44,6 +44,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Flight")
 	float ClimbPitchThreshold{5.f};
+	
+	UFUNCTION(BlueprintCallable, Category = "Flight")
+	void AddSpeedBoost(float Amount);
 	
 	
 	

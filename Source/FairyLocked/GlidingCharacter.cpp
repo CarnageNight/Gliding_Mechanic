@@ -160,6 +160,10 @@ void AGlidingCharacter::NotifyHit(class UPrimitiveComponent* MyComp, class AActo
 	CurrentForwardSpeed = FMath::FInterpTo(CurrentForwardSpeed, MinSpeed, GetWorld()->GetDeltaSeconds(), 5.f);
 	
 }
+void AGlidingCharacter::AddSpeedBoost(float Amount)
+{
+	CurrentForwardSpeed = FMath::Clamp(CurrentForwardSpeed + Amount, MinSpeed, MaxSpeed);
+}
 
 // Called to bind functionality to input
 void AGlidingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
